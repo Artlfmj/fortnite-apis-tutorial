@@ -19,5 +19,9 @@
     "fs": "^0.0.1-security",
     "lodash": "^4.17.21",
     "nodemon": "^2.0.13"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Artlfmj/fortnite-apis-tutorial.git"
   }
 }
