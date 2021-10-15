@@ -1,0 +1,23 @@
+{
+  "name": "fortnite-apis-tutorial",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "nodemon ."
+  },
+  "keywords": [
+    "Fortnite"
+  ],
+  "author": "Artlfmj",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.23.0",
+    "chalk": "^4.1.2",
+    "discord.js": "^13.2.0",
+    "dotenv": "^10.0.0",
+    "fs": "^0.0.1-security",
+    "lodash": "^4.17.21",
+    "nodemon": "^2.0.13"
+  }
+}
