@@ -1,0 +1,26 @@
+{
+    "name" : "news",
+    "description" : "Get Fortnite News",
+    "options" : [
+        {
+            "name" : "gamemode",
+            "description" : "What gamemode do you want?",
+            "required" : true,
+            "type" : "STRING",
+            "choices" : [
+                {
+                    "name" : "Battle Royale",
+                    "value" : "br"
+                },
+                {
+                    "name" : "Creative",
+                    "value" : "creative"
+                },
+                {
+                    "name" : "STW",
+                    "value" : "stw"
+                }
+            ]
+        }
+    ]
+}
