@@ -1,0 +1,12 @@
+{
+    "name" : "stats",
+    "description" : "Get Fortnite Stats of a given player",
+    "options" : [
+        {
+            "name" : "player",
+            "description" : "Player to get stats for",
+            "type" : "STRING",
+            "required" : true
+        }
+    ]
+}

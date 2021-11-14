@@ -12,17 +12,22 @@ client.on("ready", async () => {
   console.log(chalk.bold.green(`Discord Bot ${client.user.tag} is online!`));
   client.user.setPresence({ activities: [{ name: "with fortnite apis" }] });
   client.commands = new Discord.Collection();
+  let avail = []
   client.handlers = new Discord.Collection();
   const jsondir = "slash-json";
+  let cmds = await client.application.commands.fetch()
+  cmds.forEach(async(slashcont) => {
+    avail.push(slashcont.name)
+  })
   for (const fileName of fs.readdirSync(jsondir)) {
     const fileContent = require(`./${jsondir}/${fileName}`);
     client.commands.set(fileName.split(".")[0], fileContent);
     console.log(chalk.bold.green(`Loaded command ${fileName}`));
-    if (await client.application.commands.cache.has(fileContent.name))
-      return console.log(
+    if (avail.find(l => l === fileName.replace('.json', "")))
+      console.log(
         chalk.bold.red(`Command ${fileContent.name} already exists!`)
       );
-    else client.application.commands.create(fileContent).catch(console.error);
+    else client.application.commands.create(fileContent).catch(console.error).then(da => {console.log(chalk.green.bold(`Registered ${da.name} | ${da.id}`))})
   }
   const cmdDir = "handlers";
   for (const fileName of fs.readdirSync(cmdDir)) {
