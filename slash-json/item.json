@@ -1,0 +1,12 @@
+{
+    "name" : "item",
+    "description" : "Get info about an item",
+    "options" : [
+        {
+            "name" : "name",
+            "description" : "Name of the item",
+            "required" : true,
+            "type" : "STRING"
+        }
+    ]
+}
