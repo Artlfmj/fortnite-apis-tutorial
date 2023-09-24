@@ -1,26 +1,34 @@
 const Discord = require("discord.js");
 const axios = require("axios");
 const chalk = require("chalk");
-const fs = require("fs");
+
 module.exports.run = async (client, interaction) => {
-  const gamemode = await interaction.options.getString("gamemode");
-  let req = await axios({
-    method: "get",
-    url: `https://fortnite-api.com/v2/news/${gamemode}`,
-  }).catch((e) => {
-    console.error(e.toJSON());
-    return interaction.reply({
-      content: "An error occured! Please try later :)",
-    });
-  });
-  if (req) {
-    req = req.data;
+  try {
+    const gamemode = await interaction.options.getString("gamemode");
+    
+    const response = await axios.get(`https://fortnite-api.com/v2/news/${gamemode}`);
+
+    if (response.status !== 200) {
+      throw new Error(`Request failed with status code ${response.status}`);
+    }
+
+    const data = response.data.data;
+
+    if (!data || !data.image) {
+      throw new Error("Invalid response data from Fortnite API");
+    }
+
     const embed = new Discord.MessageEmbed()
       .setColor("RANDOM")
-      .setTitle("Fortnite News for " + gamemode.toUpperCase())
-      .setImage(req.data.image)
+      .setTitle(`Fortnite News for ${gamemode.toUpperCase()}`)
+      .setImage(data.image)
       .setFooter(client.user.username, client.user.displayAvatarURL());
+
     interaction.reply({ embeds: [embed] });
-    
+  } catch (error) {
+    console.error(chalk.red("Error in Fortnite News command:", error.message));
+    interaction.reply({
+      content: "An error occurred! Please try again later :)",
+    });
   }
 };
