@@ -1,26 +1,52 @@
 const Discord = require("discord.js");
+const axios = require("axios");
+const chalk = require("chalk");
 const fs = require("fs");
 const { createCanvas, loadImage, registerFont } = require("canvas");
-const axios = require("axios");
 const moment = require("moment");
-const date = moment().format("dddd, MMMM Do YYYY");
-require("colors");
+
+const FORTNITE_API_KEY = process.env.FNAPIIO;
+const SHOP_LANGUAGE = "en";
+const DATE_FORMAT = "dddd, MMMM Do YYYY";
+const ITEM_SIZE = {
+  DoubleWide: {
+    width: 1060,
+    height: 1000,
+  },
+  Small: {
+    width: 500,
+    height: 480,
+  },
+  Normal: {
+    width: 500,
+    height: 1000,
+  },
+};
+
+const FONT_OPTIONS = {
+  fontFamily: "Burbank Big Regular",
+  fontWeight: "Black",
+};
 
 module.exports.run = async (client, interaction) => {
   await interaction.deferReply("Loading shop image...");
+
   try {
-    const shopItems = await getShopItems(process.env.FNAPIIO, "en");
-    const shop = await generateShop(shopItems, "CODE LFMRD #AD");
-    const attach = new Discord.MessageAttachment(shop, "shop.jpg");
+    const shopItems = await getShopItems(FORTNITE_API_KEY, SHOP_LANGUAGE);
+    const shopImage = await generateShopImage(shopItems);
+    const attachment = new Discord.MessageAttachment(shopImage, "shop.jpg");
     await interaction.editReply({
-      files: [attach],
+      files: [attachment],
     });
-  } catch (e) {
-    console.error(e);
+  } catch (error) {
+    console.error(chalk.red("Error in Fortnite Shop command:", error.message));
+    interaction.reply({
+      content: "An error occurred! Please try again later :)",
+    });
   }
 };
 
-async function generateShop(shop, watermark) {
+async function generateShopImage(shopItems) {
   const beforeFinish = Date.now();
   // Font
   registerFont("./assets/fonts/BurbankBigRegularBlack.otf", {
@@ -29,30 +55,32 @@ async function generateShop(shop, watermark) {
   });
 
   // Check shop
-  if (!shop) process.exit(1);
+  if (!shopItems) {
+    throw new Error("Failed to fetch shop items");
+  }
 
   // Get the image width
-  const keys = Object.keys(shop);
-  let bigwidth = 0;
+  const keys = Object.keys(shopItems);
+  let bigWidth = 0;
 
   for (let i of keys) {
-    let curwidth = 250;
-    i = shop[i].entries;
+    let curWidth = 250;
+    i = shopItems[i].entries;
 
     i.forEach((el) => {
-      if (el.size === "DoubleWide") curwidth += 1060;
-      else if (el.size === "Small") curwidth += 250;
-      else if (el.size === "Normal") curwidth += 500;
-      else curwidth += 500;
-      curwidth += 60;
+      if (el.size === "DoubleWide") curWidth += ITEM_SIZE.DoubleWide.width;
+      else if (el.size === "Small") curWidth += ITEM_SIZE.Small.width;
+      else if (el.size === "Normal") curWidth += ITEM_SIZE.Normal.width;
+      else curWidth += ITEM_SIZE.Normal.width;
+      curWidth += 60;
     });
 
-    if (curwidth > bigwidth) bigwidth = curwidth;
+    if (curWidth > bigWidth) bigWidth = curWidth;
   }
 
   // Make the image
   const canvasHeight = keys.length * 1200 + 1000;
-  const canvasWidth = bigwidth;
+  const canvasWidth = bigWidth;
 
   console.log(`[CANVAS] Width ${canvasWidth} x Height ${canvasHeight}`.green);
   const canvas = createCanvas(canvasWidth, canvasHeight);
@@ -72,33 +100,34 @@ async function generateShop(shop, watermark) {
 
   // Item Shop
   ctx.fillStyle = "#ffffff";
-  ctx.font = 'italic 300px "Burbank Big Rg Bk"';
+  ctx.font = `italic 300px "${FONT_OPTIONS.fontFamily}"`;
   ctx.textAlign = "left";
   ctx.fillText("Item Shop", 170, 500);
 
   // Date
-  ctx.font = 'italic 125px "Burbank Big Rg Bk"';
+  ctx.font = `italic 125px "${FONT_OPTIONS.fontFamily}"`;
   ctx.textAlign = "right";
-  ctx.fillText(date, canvas.width - 100, 400);
+  ctx.fillText(moment().format(DATE_FORMAT), canvas.width - 100, 400);
 
   // Watermark
+  const watermark = "CODE LFMRD #AD"; // Replace with your watermark
   if (watermark) ctx.fillText(watermark, canvas.width - 100, 550);
 
   // Start Rendering
   for (const i of keys) {
-    const items = shop[i].entries;
+    const items = shopItems[i].entries;
 
     // Draw shop section name
-    if (shop[i].name !== null) {
-      console.log(`[SECTIONS] Drawing ${shop[i].name} Section`.magenta);
+    if (shopItems[i].name !== null) {
+      console.log(`[SECTIONS] Drawing ${shopItems[i].name} Section`.magenta);
 
       ctx.fillStyle = "#ffffff";
-      ctx.font = 'italic 100px "Burbank Big Rg Bk"';
+      ctx.font = `italic 100px "${FONT_OPTIONS.fontFamily}"`;
       ctx.textAlign = "left";
-      ctx.fillText(shop[i].name, 185, featuredY - 60);
+      ctx.fillText(shopItems[i].name, 185, featuredY - 60);
       ctx.drawImage(
         await loadImage("./assets/clock.png"),
-        ctx.measureText(shop[i].name).width + 200,
+        ctx.measureText(shopItems[i].name).width + 200,
         featuredY - 160,
         125,
         125
@@ -117,13 +146,13 @@ async function generateShop(shop, watermark) {
 
       // Get the image width/height
       if (item.size === "DoubleWide") {
-        imgWidth = 1060;
-        imgHeight = 1000;
+        imgWidth = ITEM_SIZE.DoubleWide.width;
+        imgHeight = ITEM_SIZE.DoubleWide.height;
         below = false;
         wasBelow = false;
       } else if (item.size === "Small") {
-        imgWidth = 500;
-        imgHeight = 480;
+        imgWidth = ITEM_SIZE.Small.width;
+        imgHeight = ITEM_SIZE.Small.height;
         if (below === true) {
           featuredX = featuredX - (imgWidth + 60);
           featuredY = featuredY + 520;
@@ -134,13 +163,13 @@ async function generateShop(shop, watermark) {
           wasBelow = false;
         }
       } else if (item.size === "Normal") {
-        imgWidth = 500;
-        imgHeight = 1000;
+        imgWidth = ITEM_SIZE.Normal.width;
+        imgHeight = ITEM_SIZE.Normal.height;
         below = false;
         wasBelow = false;
       } else {
-        imgWidth = 500;
-        imgHeight = 1000;
+        imgWidth = ITEM_SIZE.Normal.width;
+        imgHeight = ITEM_SIZE.Normal.height;
         below = false;
         wasBelow = false;
       }
@@ -234,12 +263,12 @@ async function generateShop(shop, watermark) {
       // Load & Draw Name
       ctx.fillStyle = "#ffffff";
       let fontSize = 55;
-      ctx.font = "italic " + fontSize + 'px "Burbank Big Rg Bk"';
+      ctx.font = `italic ${fontSize}px "${FONT_OPTIONS.fontFamily}"`;
 
       let measure = ctx.measureText(item.name.toUpperCase()).width;
       while (measure > imgWidth - 40) {
         fontSize = fontSize - 0.6;
-        ctx.font = "italic " + fontSize + 'px "Burbank Big Rg Bk"';
+        ctx.font = `italic ${fontSize}px "${FONT_OPTIONS.fontFamily}"`;
         measure = ctx.measureText(item.name.toUpperCase()).width;
       }
       ctx.textAlign = "center";
@@ -343,11 +372,9 @@ async function getShopItems(apiKey, language) {
 
   const store = items.data.shop;
 
-  if (!store)
-    return console.error(
-      "Please add your API Key in the Authorization header for the HTTP Request.\nGet your FortniteAPI.io Authorization Key at https://dashboard.fortniteapi.io"
-        .red
-    );
+  if (!store) {
+    throw new Error("Failed to fetch shop data");
+  }
 
   store.forEach((el) => {
     if (!shop[el.section.id]) {
